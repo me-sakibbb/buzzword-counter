@@ -13,7 +13,7 @@ interface TeacherAnalyticsProps {
   period?: "7d" | "30d" | "90d";
 }
 
-export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, period = "30d" }) => {
+export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, period = "90d" }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [topBuzzwords, setTopBuzzwords] = useState<string[]>([]);
