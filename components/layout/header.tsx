@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { getCurrentUser } from "@/lib/auth"
-import { UserMenu } from "@/components/auth/user-menu"
-import { Button } from "@/components/ui/button"
+import { AuthButton } from "@/components/auth/auth-button"
 import { BarChart3, Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,13 +37,7 @@ export async function Header() {
 
         {/* Right Section */}
         <div className="flex items-center gap-4">
-          {user ? (
-            <UserMenu user={user} />
-          ) : (
-            <Button asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
-          )}
+          <AuthButton initialUser={user} />
 
           {/* Mobile Menu */}
           <div className="md:hidden">

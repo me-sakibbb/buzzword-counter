@@ -10,13 +10,11 @@ import { Calendar, Play, BarChart3, Users, Clock } from "lucide-react"
 import { useLoader } from "@/app/context/LoaderContext"
 
 interface SessionPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
-
-
-  const { id } = params
+  const { id } = await params
   const supabase = await createClient()
   const user = await getCurrentUser()
 
@@ -30,6 +28,10 @@ export default async function SessionPage({ params }: SessionPageProps) {
     .eq("id", id)
     .single()
 
+  if (!session) {
+    notFound()
+  }
+
   const { data: buzzwords } = await supabase
     .from("buzzwords")
     .select("*")
@@ -37,10 +39,6 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
   session.buzzwords = buzzwords;  // attach buzzwords to session object
 
-
-  if (!session) {
-    notFound()
-  }
 
   // Get session aggregates if available
   const { data: aggregates } = await supabase.from("session_aggregates").select("*").eq("session_id", id).single()
@@ -106,34 +104,51 @@ export default async function SessionPage({ params }: SessionPageProps) {
       </Card>
 
       {/* Action Buttons */}
-      {isApproved && (
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          {canTrack ? (
-            <Button size="lg" asChild>
-              <Link href={`/sessions/${session.id}/live`}>
-                <Play className="h-5 w-5 mr-2" />
-                Start Live Tracking
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {isApproved && canTrack ? (
+          <Button size="lg" asChild>
+            <Link href={`/sessions/${session.id}/live`}>
+              <Play className="h-5 w-5 mr-2" />
+              Start Live Tracking
+            </Link>
+          </Button>
+        ) : isApproved ? (
+          <div className="text-center space-y-2">
+            <Button size="lg" disabled>
+              <Play className="h-5 w-5 mr-2" />
+              Start Live Tracking
+            </Button>
+            <p className="text-sm text-muted-foreground">{user ? "Account approval required" : "Sign in required"}</p>
+          </div>
+        ) : null}
+        
+        {aggregates && (
+          <Button size="lg" variant="outline" asChild>
+            <Link href={`/sessions/${session.id}/analytics`} prefetch={true}>
+              <BarChart3 className="h-5 w-5 mr-2" />
+              View Analytics
+            </Link>
+          </Button>
+        )}
+
+        {user && user.role === "admin" && (
+            <Button size="lg" variant="secondary" className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 dark:text-yellow-500" asChild>
+              <Link href={`/sessions/${session.id}/betting/admin`} prefetch={false}>
+                <Coins className="h-5 w-5 mr-2" />
+                Admin Betting Panel
               </Link>
             </Button>
-          ) : (
-            <div className="text-center space-y-2">
-              <Button size="lg" disabled>
-                <Play className="h-5 w-5 mr-2" />
-                Start Live Tracking
-              </Button>
-              <p className="text-sm text-muted-foreground">{user ? "Account approval required" : "Sign in required"}</p>
-            </div>
-          )}
-          {aggregates && (
-            <Button size="lg" variant="outline" asChild>
-              <Link href={`/sessions/${session.id}/analytics`} prefetch={true}>
-                <BarChart3 className="h-5 w-5 mr-2" />
-                View Analytics
+        )}
+
+        {user && user.role !== "admin" && (
+            <Button size="lg" variant="secondary" className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-700 dark:text-yellow-500" asChild>
+              <Link href={`/sessions/${session.id}/betting`} prefetch={false}>
+                <Coins className="h-5 w-5 mr-2" />
+                Betting Room
               </Link>
             </Button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Buzzwords Grid */}
       <Card>

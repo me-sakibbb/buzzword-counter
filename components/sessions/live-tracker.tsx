@@ -113,13 +113,15 @@ export function LiveTracker({ session, user }: LiveTrackerProps) {
   }
 
   const handleBuzzwordClick = useCallback(
-    (buzzword: Buzzword) => {
+    async (buzzword: Buzzword) => {
       if (!isTracking || !startTime) return
 
-      setCounts((prev) => ({
-        ...prev,
-        [buzzword.id]: (prev[buzzword.id] || 0) + 1,
-      }))
+      const newCounts = {
+        ...counts,
+        [buzzword.id]: (counts[buzzword.id] || 0) + 1,
+      }
+      
+      setCounts(newCounts)
 
       setTimeline((prev) => [
         ...prev,
@@ -128,8 +130,26 @@ export function LiveTracker({ session, user }: LiveTrackerProps) {
           buzzword: buzzword.label,
         },
       ])
+      
+      // Update betting room live counts in the background (fire and forget)
+      // First check if there's an active room for this session
+      const supabase = createClient()
+      const { data: room } = await supabase
+        .from("betting_rooms")
+        .select("id")
+        .eq("session_id", session.id)
+        .eq("status", "open")
+        .single()
+        
+      if (room) {
+        fetch(`/api/betting/rooms/${room.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ live_counts: newCounts }),
+        }).catch(err => console.error("Failed to sync live count to betting room", err))
+      }
     },
-    [isTracking, startTime],
+    [isTracking, startTime, counts, session.id],
   )
 
   const handleSubmit = async () => {

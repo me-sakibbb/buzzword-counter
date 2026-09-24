@@ -3,15 +3,18 @@ import { type NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
-    const teacherId = searchParams.get("id");
-    const period = searchParams.get("period") || "30d";
-    const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const teacherId = params.id;
+    const period = searchParams.get("period") || "all";
+    const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "90d" ? 90 : null;
+    const cutoffDate = days ? new Date() : null;
+    if (cutoffDate && days) cutoffDate.setDate(cutoffDate.getDate() - days);
 
     if (!teacherId) {
       return NextResponse.json({ error: "Missing teacher id" }, { status: 400 });
@@ -33,12 +36,17 @@ export async function GET(request: NextRequest) {
     });
 
     // Get approved submissions
-    const { data: submissions, error } = await supabase
+    let query = supabase
       .from("submissions")
       .select(`*, session:sessions!inner(*)`)
       .eq("status", "approved")
-      .gte("created_at", cutoffDate.toISOString())
       .order("created_at", { ascending: true });
+
+    if (cutoffDate) {
+      query = query.gte("created_at", cutoffDate.toISOString());
+    }
+
+    const { data: submissions, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest) {
       topBuzzwords,
       totalSubmissions: teacherSubs.length,
       dateRange: {
-        start: cutoffDate.toISOString().split("T")[0],
+        start: cutoffDate ? cutoffDate.toISOString().split("T")[0] : "all",
         end: new Date().toISOString().split("T")[0],
       },
     });

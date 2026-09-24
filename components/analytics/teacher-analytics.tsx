@@ -10,10 +10,10 @@ interface ChartDataPoint {
 
 interface TeacherAnalyticsProps {
   teacherId: string;
-  period?: "7d" | "30d" | "90d";
+  period?: "7d" | "30d" | "90d" | "all";
 }
 
-export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, period = "90d" }) => {
+export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, period = "all" }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [topBuzzwords, setTopBuzzwords] = useState<string[]>([]);
@@ -38,11 +38,11 @@ export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, p
   if (error) return <Card>{error}</Card>;
   if (!data.length) return <Card>No analytics data available.</Card>;
     const colors = [
-      "hsl(var(--chart-1))",
-      "hsl(var(--chart-2))",
-      "hsl(var(--chart-3))",
-      "hsl(var(--chart-4))",
-      "hsl(var(--chart-5))",
+      "#22d3ee",
+      "#f97316",
+      "#a78bfa",
+      "#f43f5e",
+      "#facc15",
     ];
 
     return (
@@ -58,11 +58,12 @@ export const TeacherAnalytics: React.FC<TeacherAnalyticsProps> = ({ teacherId, p
               {topBuzzwords.map((buzzword, idx) => (
                 <Line
                   key={buzzword}
-                  type="monotone"
+                  type="linear"
                   dataKey={buzzword}
                   stroke={colors[idx % colors.length]}
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
                 />
               ))}
             </LineChart>
